@@ -9,7 +9,6 @@ import java.sql.ResultSet;
 
 public class App {
     private static int usuarioId;
-    private static double saldo;
     private static int pinActual;
 
     private static final String HOST = "127.0.0.1";
@@ -52,7 +51,7 @@ public class App {
             int pinIngresado = scanner.nextInt();
             if (validarPIN(connection, pinIngresado)) {
                 pinActual = pinIngresado;
-                mostrarMenu();
+                mostrarMenu(connection);
                 break;
             } else {
                 intentos--;
@@ -67,7 +66,7 @@ public class App {
     }
 
     public static boolean validarPIN(Connection connection, int pin) {
-        String query = "SELECT id, saldo FROM usuarios WHERE pin = ?";
+        String query = "SELECT id FROM usuarios WHERE pin = ?";
         try {
             PreparedStatement preparedStatement = connection.prepareStatement(query);
             preparedStatement.setInt(1, pin);
@@ -75,7 +74,6 @@ public class App {
 
             if (resultSet.next()) {
                 usuarioId = resultSet.getInt("id");
-                saldo = resultSet.getDouble("saldo");
                 return true;
             }
         } catch (Exception e) {
@@ -84,32 +82,36 @@ public class App {
         return false;
     }
 
-    public static void mostrarMenu() {
+    public static void mostrarMenu(Connection connection) {
         Scanner scanner = new Scanner(System.in);
         while (true) {
             System.out.println("\nMenú Principal:");
             System.out.println("1. Consultar saldo.");
             System.out.println("2. Realizar un depósito.");
             System.out.println("3. Realizar un retiro.");
-            System.out.println("4. Cambiar PIN.");
-            System.out.println("5. Salir.");
+            System.out.println("4. Realizar transferencia.");
+            System.out.println("5. Cambiar PIN.");
+            System.out.println("6. Salir.");
             System.out.print("Seleccione una opción: ");
             int opcion = scanner.nextInt();
 
             switch (opcion) {
                 case 1:
-                    consultarSaldo();
+                System.out.println("Su saldo actual es: " + consultarSaldo(connection));
                     break;
                 case 2:
-                    realizarDeposito();
+                    realizarDeposito(connection);
                     break;
                 case 3:
-                    realizarRetiro();
+                    realizarRetiro(connection);
                     break;
                 case 4:
-                    cambiarPIN();
+                    realizarTransferencia(connection);
                     break;
                 case 5:
+                    cambiarPIN(connection);
+                    break;
+                case 6:
                     System.out.println("Gracias por usar el cajero. ¡Hasta luego!");
                     System.exit(0);
                     break;
@@ -119,52 +121,117 @@ public class App {
         }
     }
 
-    public static void consultarSaldo() {
-        System.out.println("Su saldo actual es: $" + saldo);
+    public static double consultarSaldo(Connection connection) {
+        String query = "SELECT saldo FROM cuentas WHERE usuario_id = ?";
+    try {
+        PreparedStatement preparedStatement = connection.prepareStatement(query);
+        preparedStatement.setInt(1, usuarioId);
+        ResultSet resultSet = preparedStatement.executeQuery();
+
+        if (resultSet.next()) {
+            return resultSet.getDouble("saldo");
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return 0.0; // Si no se puede obtener el saldo, devuelve 0.0
+
     }
 
-    public static void realizarDeposito() {
+    public static void actualizarSaldo(Connection connection, double nuevoSaldo) {
+        String query = "UPDATE cuentas SET saldo = ? WHERE usuario_id = ?";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setDouble(1, nuevoSaldo);
+            preparedStatement.setInt(2, usuarioId);
+            preparedStatement.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void realizarDeposito(Connection connection) {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Ingrese la cantidad a depositar: $");
         double cantidad = scanner.nextDouble();
-
+    
         if (cantidad <= 0) {
             System.out.println("Cantidad no válida.");
-        } else {
-            saldo += cantidad;
-            System.out.println("Depósito realizado con éxito. Su nuevo saldo es: $" + saldo);
+            return;
         }
+    
+        double saldoActual = consultarSaldo(connection);
+        double nuevoSaldo = saldoActual + cantidad;
+        actualizarSaldo(connection, nuevoSaldo);
+    
+        registrarEnHistorico(connection, "deposito", cantidad);
+    
+        System.out.println("Depósito realizado con éxito. Su nuevo saldo es: $" + nuevoSaldo);
     }
-
-    public static void realizarRetiro() {
+    
+    public static void realizarRetiro(Connection connection) {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Ingrese la cantidad a retirar: $");
         double cantidad = scanner.nextDouble();
-
+    
         if (cantidad <= 0) {
             System.out.println("Cantidad no válida.");
-        } else if (cantidad > saldo) {
+            return;
+        }
+    
+        double saldoActual = consultarSaldo(connection);
+        if (cantidad > saldoActual) {
             System.out.println("Saldo insuficiente.");
-        } else {
-            saldo -= cantidad;
-            System.out.println("Retiro realizado con éxito. Su nuevo saldo es: $" + saldo);
+            return;
+        }
+    
+        double nuevoSaldo = saldoActual - cantidad;
+        actualizarSaldo(connection, nuevoSaldo);
+    
+        registrarEnHistorico(connection, "retiro", cantidad);
+    
+        System.out.println("Retiro realizado con éxito. Su nuevo saldo es: $" + nuevoSaldo);
+    }
+    
+    public static void registrarEnHistorico(Connection connection, String accion, double cantidad) {
+        String query = "INSERT INTO historico (usuario_id, numero_cuenta, accion, cantidad) VALUES (?, ?, ?, ?)";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setInt(1, usuarioId);
+            preparedStatement.setString(2, obtenerNumeroCuenta(connection, usuarioId));
+            preparedStatement.setString(3, accion);
+            preparedStatement.setDouble(4, cantidad);
+            preparedStatement.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
+    
 
-    public static void cambiarPIN() {
+    public static void cambiarPIN(Connection connection) {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Ingrese su PIN actual: ");
         int pinIngresado = scanner.nextInt();
-
+    
         if (pinIngresado == pinActual) {
             System.out.print("Ingrese su nuevo PIN: ");
             int nuevoPin = scanner.nextInt();
             System.out.print("Confirme su nuevo PIN: ");
             int confirmacionPin = scanner.nextInt();
-
+    
             if (nuevoPin == confirmacionPin) {
-                pinActual = nuevoPin;
-                System.out.println("PIN actualizado con éxito.");
+                String updateQuery = "UPDATE usuarios SET pin = ? WHERE id = ?";
+                try {
+                    PreparedStatement updateStatement = connection.prepareStatement(updateQuery);
+                    updateStatement.setInt(1, nuevoPin);
+                    updateStatement.setInt(2, usuarioId);
+                    updateStatement.executeUpdate();
+    
+                    pinActual = nuevoPin;
+                    System.out.println("PIN actualizado con éxito.");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             } else {
                 System.out.println("Los PINs no coinciden.");
             }
@@ -172,4 +239,95 @@ public class App {
             System.out.println("PIN incorrecto.");
         }
     }
+
+    public static void realizarTransferencia(Connection connection) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Ingrese el número de cuenta de destino: ");
+        String cuentaDestino = scanner.next();
+        System.out.print("Ingrese la cantidad a transferir: $");
+        double cantidad = scanner.nextDouble();
+    
+        double saldoActual = consultarSaldo(connection);
+    
+        if (cantidad <= 0) {
+            System.out.println("Cantidad no válida.");
+            return;
+        } else if (cantidad > saldoActual) {
+            System.out.println("Saldo insuficiente.");
+            return;
+        }
+    
+        String insertTransferenciaQuery = "INSERT INTO transferencias (emisor_id, receptor_id, emisor_cuenta, receptor_cuenta, cantidad) VALUES (?, ?, ?, ?, ?)";
+        String updateSaldoEmisorQuery = "UPDATE cuentas SET saldo = saldo - ? WHERE usuario_id = ?";
+        String updateSaldoReceptorQuery = "UPDATE cuentas SET saldo = saldo + ? WHERE numero_cuenta = ?";
+        
+        try {
+            // Realizar transferencia
+            connection.setAutoCommit(false);
+            
+            PreparedStatement insertTransferenciaStatement = connection.prepareStatement(insertTransferenciaQuery);
+            insertTransferenciaStatement.setInt(1, usuarioId);
+            insertTransferenciaStatement.setInt(2, obtenerIdPorNumeroCuenta(connection, cuentaDestino));
+            insertTransferenciaStatement.setString(3, obtenerNumeroCuenta(connection, usuarioId));
+            insertTransferenciaStatement.setString(4, cuentaDestino);
+            insertTransferenciaStatement.setDouble(5, cantidad);
+            insertTransferenciaStatement.executeUpdate();
+    
+            PreparedStatement updateSaldoEmisorStatement = connection.prepareStatement(updateSaldoEmisorQuery);
+            updateSaldoEmisorStatement.setDouble(1, cantidad);
+            updateSaldoEmisorStatement.setInt(2, usuarioId);
+            updateSaldoEmisorStatement.executeUpdate();
+    
+            PreparedStatement updateSaldoReceptorStatement = connection.prepareStatement(updateSaldoReceptorQuery);
+            updateSaldoReceptorStatement.setDouble(1, cantidad);
+            updateSaldoReceptorStatement.setString(2, cuentaDestino);
+            updateSaldoReceptorStatement.executeUpdate();
+    
+            connection.commit();
+            connection.setAutoCommit(true);
+    
+            System.out.println("Transferencia realizada con éxito. Su nuevo saldo es: $" + (saldoActual - cantidad));
+        } catch (Exception e) {
+            e.printStackTrace();
+            try {
+                connection.rollback();
+                connection.setAutoCommit(true);
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+    
+    public static int obtenerIdPorNumeroCuenta(Connection connection, String numeroCuenta) {
+        String query = "SELECT usuario_id FROM cuentas WHERE numero_cuenta = ?";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, numeroCuenta);
+            ResultSet resultSet = preparedStatement.executeQuery();
+    
+            if (resultSet.next()) {
+                return resultSet.getInt("usuario_id");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1; // Si no se puede obtener el ID, devuelve -1
+    }
+    
+    public static String obtenerNumeroCuenta(Connection connection, int usuarioId) {
+        String query = "SELECT numero_cuenta FROM cuentas WHERE usuario_id = ?";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setInt(1, usuarioId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+    
+            if (resultSet.next()) {
+                return resultSet.getString("numero_cuenta");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null; // Si no se puede obtener el número de cuenta, devuelve null
+    }
+    
 }
