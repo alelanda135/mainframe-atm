@@ -2,16 +2,29 @@
 -- Crear la tabla de usuarios (modificada para incluir el nombre)
 CREATE TABLE IF NOT EXISTS usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(255) NOT NULL,
+    alias VARCHAR(255) NOT NULL,
     pin INT NOT NULL,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado ENUM('activo', 'inactivo') NOT NULL DEFAULT 'activo'
 );
 
+--poner una tabla de username para que inicien sesión
+/*ALTER TABLE usuarios ADD COLUMN alias varchar(100);
+
+UPDATE usuarios SET alias = 'johnyd' WHERE id = 1;
+UPDATE usuarios SET alias = 'janst' WHERE id = 2;
+UPDATE usuarios SET alias = 'mike8' WHERE id = 3;
+UPDATE usuarios SET alias = 'embrown1' WHERE id = 4;
+UPDATE usuarios SET alias = 'wilson4' WHERE id = 5;
+
+ALTER TABLE usuarios MODIFY COLUMN alias varchar(100) NOT NULL;
+ALTER TABLE usuarios ADD CONSTRAINT unique_alias_constraint UNIQUE (alias);*/
+
 -- Crear tabla cuentas
 CREATE TABLE IF NOT EXISTS cuentas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT,
+    nombre VARCHAR(255) NOT NULL,
     numero_cuenta VARCHAR(20) NOT NULL,
     tipo_cuenta ENUM('ahorros', 'corriente') NOT NULL,
     saldo DOUBLE NOT NULL,
@@ -45,33 +58,34 @@ CREATE TABLE IF NOT EXISTS transferencias (
 
 
 -- Insertar datos de ejemplo en usuarios
-INSERT INTO usuarios (nombre, pin) VALUES
-    ('John Doe', 1234),
-    ('Jane Smith', 5678),
-    ('Michael Johnson', 9876),
-    ('Emily Brown', 4321),
-    ('David Wilson', 8765);
+INSERT INTO usuarios (alias, pin) VALUES
+    ('johnyd', 1234),
+    ('janst', 5678),
+    ('mike8', 9876),
+    ('embrown1', 4321),
+    ('wilson4', 8765);
+
 
 -- Insertar datos para cuentas
 -- Cuentas de John Doe
-INSERT INTO cuentas (usuario_id, numero_cuenta, tipo_cuenta, saldo) VALUES
-    (1, '1234567890', 'ahorros', 1000.00);
+INSERT INTO cuentas (usuario_id, nombre, numero_cuenta, tipo_cuenta, saldo) VALUES
+    (1, 'John Doe','1234567890', 'ahorros', 1000.00);
 
 -- Cuentas de Jane Smith
-INSERT INTO cuentas (usuario_id, numero_cuenta, tipo_cuenta, saldo) VALUES
-    (2, '5432109876', 'ahorros', 1500.00);
+INSERT INTO cuentas (usuario_id, nombre, numero_cuenta, tipo_cuenta, saldo) VALUES
+    (2, 'Jane Smith','5432109876', 'ahorros', 1500.00);
 
 -- Cuentas de Michael Johnson
-INSERT INTO cuentas (usuario_id, numero_cuenta, tipo_cuenta, saldo) VALUES
-    (3, '2468135790', 'corriente', 2000.00);
+INSERT INTO cuentas (usuario_id, nombre,numero_cuenta, tipo_cuenta, saldo) VALUES
+    (3, 'Michael Johnson','2468135790', 'corriente', 2000.00);
 
 -- Cuentas de Emily Brown
-INSERT INTO cuentas (usuario_id, numero_cuenta, tipo_cuenta, saldo) VALUES
-    (4, '1357924680', 'ahorros', 800.00);
+INSERT INTO cuentas (usuario_id, nombre,numero_cuenta, tipo_cuenta, saldo) VALUES
+    (4, 'Emily Brown','1357924680', 'ahorros', 800.00);
 
 -- Cuentas de David Wilson
-INSERT INTO cuentas (usuario_id, numero_cuenta, tipo_cuenta, saldo) VALUES
-    (5, '9876540123', 'ahorros', 1200.00);
+INSERT INTO cuentas (usuario_id, nombre,numero_cuenta, tipo_cuenta, saldo) VALUES
+    (5, 'David Wilson','9876540123', 'ahorros', 1200.00);
 
 -- Transferencias ficticias entre cuentas
 INSERT INTO transferencias (emisor_id, receptor_id, emisor_cuenta, receptor_cuenta, cantidad) VALUES
