@@ -1,10 +1,11 @@
-package bo.edu.ucb.sis213;
+package bo.edu.ucb.sis213.DAO;
 
-import java.sql.SQLException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
-public class conexionBDD {
+
+public class ConexionBDD {
 
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 3306;
@@ -24,5 +25,5 @@ public class conexionBDD {
 
         return DriverManager.getConnection(jdbcUrl, USER, PASSWORD);
     }
-
+    
 }

@@ -1,5 +1,5 @@
 
--- Crear la tabla de usuarios (modificada para incluir el nombre)
+-- Crear la tabla de usuarios 
 CREATE TABLE IF NOT EXISTS usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     alias VARCHAR(255) NOT NULL,
@@ -7,18 +7,6 @@ CREATE TABLE IF NOT EXISTS usuarios (
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     estado ENUM('activo', 'inactivo') NOT NULL DEFAULT 'activo'
 );
-
---poner una tabla de username para que inicien sesión
-/*ALTER TABLE usuarios ADD COLUMN alias varchar(100);
-
-UPDATE usuarios SET alias = 'johnyd' WHERE id = 1;
-UPDATE usuarios SET alias = 'janst' WHERE id = 2;
-UPDATE usuarios SET alias = 'mike8' WHERE id = 3;
-UPDATE usuarios SET alias = 'embrown1' WHERE id = 4;
-UPDATE usuarios SET alias = 'wilson4' WHERE id = 5;
-
-ALTER TABLE usuarios MODIFY COLUMN alias varchar(100) NOT NULL;
-ALTER TABLE usuarios ADD CONSTRAINT unique_alias_constraint UNIQUE (alias);*/
 
 -- Crear tabla cuentas
 CREATE TABLE IF NOT EXISTS cuentas (
@@ -67,24 +55,11 @@ INSERT INTO usuarios (alias, pin) VALUES
 
 
 -- Insertar datos para cuentas
--- Cuentas de John Doe
 INSERT INTO cuentas (usuario_id, nombre, numero_cuenta, tipo_cuenta, saldo) VALUES
-    (1, 'John Doe','1234567890', 'ahorros', 1000.00);
-
--- Cuentas de Jane Smith
-INSERT INTO cuentas (usuario_id, nombre, numero_cuenta, tipo_cuenta, saldo) VALUES
-    (2, 'Jane Smith','5432109876', 'ahorros', 1500.00);
-
--- Cuentas de Michael Johnson
-INSERT INTO cuentas (usuario_id, nombre,numero_cuenta, tipo_cuenta, saldo) VALUES
-    (3, 'Michael Johnson','2468135790', 'corriente', 2000.00);
-
--- Cuentas de Emily Brown
-INSERT INTO cuentas (usuario_id, nombre,numero_cuenta, tipo_cuenta, saldo) VALUES
-    (4, 'Emily Brown','1357924680', 'ahorros', 800.00);
-
--- Cuentas de David Wilson
-INSERT INTO cuentas (usuario_id, nombre,numero_cuenta, tipo_cuenta, saldo) VALUES
+    (1, 'John Doe','1234567890', 'ahorros', 1000.00),
+    (2, 'Jane Smith','5432109876', 'ahorros', 1500.00),
+    (3, 'Michael Johnson','2468135790', 'corriente', 2000.00),
+    (4, 'Emily Brown','1357924680', 'ahorros', 800.00),
     (5, 'David Wilson','9876540123', 'ahorros', 1200.00);
 
 -- Transferencias ficticias entre cuentas
